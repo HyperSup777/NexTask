@@ -1,0 +1,39 @@
+MEU QUADRO — VERSÃO PROFISSIONAL
+=================================
+
+O QUE VEM NESTA PASTA
+- index.html: estrutura das telas de login e Kanban.
+- styles.css: identidade visual e layout responsivo.
+- app.js: autenticação, quadro e sincronização.
+- firebase-config.js: configuração do seu projeto Firebase.
+- firestore.rules: regras de segurança do Firestore.
+
+IMPORTANTE
+O projeto precisa ser conectado a um Firebase seu antes de login e nuvem funcionarem.
+Não compartilhe sua senha. A configuração do Firebase identifica o app, mas as regras do
+Firestore e o Firebase Authentication também precisam ser configurados.
+
+CONFIGURAÇÃO DO FIREBASE
+1. Acesse https://console.firebase.google.com/ e crie um projeto.
+2. Adicione um app Web (ícone </>) e copie a configuração do SDK.
+3. No Authentication > Método de login, ative E-mail/senha.
+4. Crie o Firestore Database.
+5. Abra firebase-config.js e substitua os valores de exemplo pelos valores do seu app Web.
+6. No Firestore > Regras, publique o conteúdo de firestore.rules.
+7. Em Authentication > Configurações > Domínios autorizados, confira o domínio de teste
+   ou adicione o domínio da hospedagem.
+
+COMO ABRIR
+Por usar módulos JavaScript e Firebase via CDN, não abra com file://.
+Use uma hospedagem HTTPS ou um servidor local (por exemplo, VS Code + Live Server).
+Não é necessário npm install para esta versão.
+
+DADOS E PRIVACIDADE
+Cada conta salva seu quadro em users/{uid}/kanban/state.
+As regras permitem acesso apenas ao usuário autenticado cujo UID corresponde à pasta.
+A senha é administrada pelo Firebase Authentication e não é gravada no documento do quadro.
+
+OBSERVAÇÃO SOBRE A VERSÃO
+Esta é uma base inicial funcional para autenticação por e-mail/senha, redefinição de senha,
+criação/exclusão/movimentação de tarefas e sincronização em tempo real. A configuração
+Firebase real e a publicação ainda precisam ser feitas.

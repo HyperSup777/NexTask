@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101828">
+  <meta name="description" content="Organize suas tarefas com clareza usando Meu Quadro.">
+  <title>Meu Quadro — Gestão de tarefas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <main id="authView" class="auth-layout">
+    <section class="auth-art">
+      <div class="brand brand-light"><span class="brand-icon">M</span><span>meu<span class="brand-soft">quadro</span></span></div>
+      <div class="art-copy">
+        <span class="eyebrow">CLAREZA PARA FAZER ACONTECER</span>
+        <h1>Seu trabalho.<br><em>Em movimento.</em></h1>
+        <p>Um espaço simples e organizado para transformar planos em entregas.</p>
+      </div>
+      <div class="art-bottom"><span class="art-line"></span><span>Planeje · Acompanhe · Conclua</span></div>
+      <div class="art-orb orb-one"></div><div class="art-orb orb-two"></div>
+    </section>
+    <section class="auth-panel">
+      <div class="auth-card">
+        <div class="mobile-brand brand"><span class="brand-icon">M</span><span>meu<span class="brand-soft">quadro</span></span></div>
+        <span class="eyebrow" id="authEyebrow">BEM-VINDO DE VOLTA</span>
+        <h2 id="authTitle">Acesse sua conta</h2>
+        <p class="auth-subtitle" id="authSubtitle">Entre para continuar de onde você parou.</p>
+        <form id="authForm">
+          <label class="field"><span>E-mail</span><input id="email" type="email" autocomplete="email" placeholder="voce@exemplo.com" required></label>
+          <label class="field"><span>Senha</span><div class="password-wrap"><input id="password" type="password" autocomplete="current-password" placeholder="Pelo menos 6 caracteres" minlength="6" required><button id="togglePassword" type="button" class="password-toggle" aria-label="Mostrar senha">◉</button></div></label>
+          <button class="text-button forgot" id="forgotPassword" type="button">Esqueceu a senha?</button>
+          <button class="btn btn-primary auth-submit" id="authSubmit" type="submit">Entrar <span>→</span></button>
+        </form>
+        <p class="auth-switch"><span id="switchText">Ainda não tem uma conta?</span> <button id="switchMode" class="text-button" type="button">Criar conta</button></p>
+        <p class="auth-legal">Sua conta é protegida pelo Firebase Authentication.</p>
+      </div>
+    </section>
+  </main>
+
+  <main id="appView" class="app-shell hidden">
+    <aside class="sidebar">
+      <a class="brand sidebar-brand" href="#" aria-label="Meu Quadro início"><span class="brand-icon">M</span><span>meu<span class="brand-soft">quadro</span></span></a>
+      <div class="workspace-label">ESPAÇO DE TRABALHO</div>
+      <button class="nav-item active" type="button"><span class="nav-symbol">▦</span> Meu quadro</button>
+      <div class="sidebar-bottom">
+        <div class="profile-chip"><div class="avatar" id="userAvatar">U</div><div class="profile-meta"><strong id="userEmail">Usuário</strong><small>Conta pessoal</small></div></div>
+        <button id="logoutBtn" class="logout-btn" type="button"><span>↪</span> Sair da conta</button>
+      </div>
+    </aside>
+
+    <section class="main-area">
+      <header class="topbar">
+        <div class="breadcrumb">Workspace <span>/</span> <strong>Meu quadro</strong></div>
+        <div class="top-actions"><span class="sync-status" id="syncStatus"><i></i> Conectando...</span><button class="avatar top-avatar" id="topAvatar" aria-label="Perfil" type="button">U</button></div>
+      </header>
+      <div class="content">
+        <section class="welcome-row">
+          <div><span class="eyebrow">SEU PAINEL DE PRODUTIVIDADE</span><h1>Meu quadro</h1><p>Organize prioridades e acompanhe cada etapa do seu trabalho.</p></div>
+          <button class="btn btn-primary" id="addTaskBtn" type="button"><span class="plus">＋</span> Nova tarefa</button>
+        </section>
+        <section class="stats-grid" aria-label="Resumo das tarefas">
+          <article class="stat-card"><div class="stat-icon stat-purple">▦</div><div><span>Total de tarefas</span><strong id="totalCount">0</strong></div><small class="stat-note">No seu quadro</small></article>
+          <article class="stat-card"><div class="stat-icon stat-amber">◷</div><div><span>Em andamento</span><strong id="doingCount">0</strong></div><small class="stat-note">Em execução</small></article>
+          <article class="stat-card"><div class="stat-icon stat-green">✓</div><div><span>Concluídas</span><strong id="doneCount">0</strong></div><small class="stat-note">Finalizadas</small></article>
+        </section>
+        <section class="board-heading"><div><h2>Fluxo de trabalho</h2><p>Arraste os cartões ou altere o status pelo menu.</p></div><span class="board-date" id="todayLabel"></span></section>
+        <section class="board" aria-label="Quadro Kanban">
+          <section class="column" data-status="todo"><header class="column-header"><div><span class="status-dot dot-todo"></span><h3>A Fazer</h3><span class="column-count" id="count-todo">0</span></div><button class="column-add" data-add-status="todo" type="button" aria-label="Adicionar em A Fazer">＋</button></header><div class="task-list" id="list-todo"></div></section>
+          <section class="column" data-status="doing"><header class="column-header"><div><span class="status-dot dot-doing"></span><h3>Em Andamento</h3><span class="column-count" id="count-doing">0</span></div><button class="column-add" data-add-status="doing" type="button" aria-label="Adicionar em andamento">＋</button></header><div class="task-list" id="list-doing"></div></section>
+          <section class="column" data-status="done"><header class="column-header"><div><span class="status-dot dot-done"></span><h3>Concluído</h3><span class="column-count" id="count-done">0</span></div><button class="column-add" data-add-status="done" type="button" aria-label="Adicionar concluída">＋</button></header><div class="task-list" id="list-done"></div></section>
+        </section>
+        <footer class="page-footer">Meu Quadro <span>·</span> Suas tarefas sincronizadas com segurança.</footer>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="taskModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <form class="modal" id="taskForm">
+      <div class="modal-head"><div><span class="eyebrow">NOVA ATIVIDADE</span><h2 id="modalTitle">Adicionar tarefa</h2></div><button class="modal-close" id="closeModal" type="button" aria-label="Fechar">×</button></div>
+      <label class="field"><span>Título da tarefa</span><input id="taskTitle" maxlength="90" placeholder="Ex.: Preparar apresentação" required></label>
+      <label class="field"><span>Descrição <small>(opcional)</small></span><textarea id="taskDescription" maxlength="500" rows="4" placeholder="Adicione detalhes, etapas ou informações importantes..."></textarea></label>
+      <label class="field"><span>Status inicial</span><select id="taskStatus"><option value="todo">A Fazer</option><option value="doing">Em Andamento</option><option value="done">Concluído</option></select></label>
+      <div class="modal-actions"><button class="btn btn-quiet" id="cancelModal" type="button">Cancelar</button><button class="btn btn-primary" type="submit">Salvar tarefa <span>→</span></button></div>
+    </form>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
