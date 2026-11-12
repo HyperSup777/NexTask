@@ -65,7 +65,11 @@ service cloud.firestore {
         || (resource.data.email == request.auth.token.email.lower()
             && resource.data.status == 'pending'
             && request.resource.data.status == 'accepted'
-            && request.resource.data.acceptedBy == request.auth.uid)
+            && request.resource.data.acceptedBy == request.auth.uid
+            && request.resource.data.boardId == resource.data.boardId
+            && request.resource.data.email == resource.data.email
+            && request.resource.data.ownerId == resource.data.ownerId
+            && request.resource.data.role == resource.data.role)
       );
       allow delete: if signedIn() && isOwner(resource.data.boardId);
     }
@@ -85,8 +89,9 @@ service cloud.firestore {
         allow read: if isMember(taskBoardId());
         allow create: if canEdit(taskBoardId())
           && request.resource.data.authorId == request.auth.uid;
-        allow update, delete: if canEdit(taskBoardId())
+        allow update: if canEdit(taskBoardId())
           && (resource.data.authorId == request.auth.uid || isOwner(taskBoardId()));
+        allow delete: if canEdit(taskBoardId());
       }
     }
   }
