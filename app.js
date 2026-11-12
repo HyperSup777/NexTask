@@ -376,7 +376,7 @@ onAuthStateChanged(auth,async u=>{
   if(!u){show("auth");return;}
   $("#userEmail").textContent=u.email||"Minha conta";
   $("#userAvatar").textContent=(u.email||"U")[0].toUpperCase();
-  if(new URLSearchParams(location.search).has("task")||/\\/tasks\\/[^/]+/.test(location.pathname)){await openRouteTask();return;}
+  if(new URLSearchParams(location.search).has("task")||/\/tasks\/[^/]+/.test(location.pathname)){await openRouteTask();return;}
   show("app");
   try{await loadWorkspace();}catch(e){console.error(e);toast("Erro ao preparar seus quadros.");}
 });
