@@ -17,7 +17,7 @@ const $$ = s => [...document.querySelectorAll(s)];
 const statusNames = { todo:"A Fazer", doing:"Em Andamento", done:"Concluído" };
 const roleNames = { OWNER:"Dono", EDITOR:"Editor", VIEWER:"Leitor" };
 let user=null, boards=[], currentBoard=null, members=[], tasks=[], invites=[];
-let boardUnsub=null, taskUnsub=null, memberUnsub=null, inviteUnsub=null;
+let boardUnsub=null, taskUnsub=null, memberUnsub=null, inviteUnsub=null, boardPendingUnsub=null;
 let mode="login", selectedTask=null, detailUnsub=null, commentUnsub=null;
 let canEdit=false, isOwner=false, currentRouteTask=null, saveBusy=false;
 
