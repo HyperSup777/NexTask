@@ -63,9 +63,14 @@ function show(view){
   $("#appView").classList.toggle("hidden",view!=="app");
   $("#taskDetailView").classList.toggle("hidden",view!=="task");
 }
+function cleanupBoard(){
+  [taskUnsub,memberUnsub,boardPendingUnsub,detailUnsub,commentUnsub].forEach(fn=>{if(fn)fn();});
+  taskUnsub=memberUnsub=boardPendingUnsub=detailUnsub=commentUnsub=null;
+}
 function cleanup(){
-  [boardUnsub,taskUnsub,memberUnsub,inviteUnsub,detailUnsub,commentUnsub].forEach(fn=>{if(fn)fn();});
-  boardUnsub=taskUnsub=memberUnsub=inviteUnsub=detailUnsub=commentUnsub=null;
+  cleanupBoard();
+  [boardUnsub,inviteUnsub].forEach(fn=>{if(fn)fn();});
+  boardUnsub=inviteUnsub=null;
 }
 async function ensurePersonalBoard(){
   const memberships=await getDocs(collection(db,"users",user.uid,"memberships"));
@@ -73,8 +78,9 @@ async function ensurePersonalBoard(){
   const oldRef=doc(db,"users",user.uid,"kanban","state");
   const oldSnap=await getDoc(oldRef);
   const oldTasks=oldSnap.exists()&&Array.isArray(oldSnap.data().tasks)?oldSnap.data().tasks:[];
-  const boardId=id(), b=writeBatch(db);
-  b.set(boardRef(boardId),{name:"Meu primeiro quadro",ownerId:user.uid,createdAt:serverTimestamp(),updatedAt:serverTimestamp(),wip:{todo:0,doing:0,done:0}});
+  const boardId=id();
+  await setDoc(boardRef(boardId),{name:"Meu primeiro quadro",ownerId:user.uid,createdAt:serverTimestamp(),updatedAt:serverTimestamp(),wip:{todo:0,doing:0,done:0}});
+  const b=writeBatch(db);
   b.set(doc(db,"boards",boardId,"members",user.uid),{userId:user.uid,email:user.email,role:"OWNER",joinedAt:serverTimestamp()});
   b.set(userMembershipRef(boardId),{boardId,name:"Meu primeiro quadro",ownerId:user.uid,role:"OWNER",joinedAt:serverTimestamp()});
   oldTasks.forEach(t=>{
@@ -123,7 +129,7 @@ async function acceptInvite(inviteId){
 }
 async function selectBoard(boardId){
   const b=boards.find(x=>x.id===boardId);if(!b)return;
-  cleanup();currentBoard=b;isOwner=b.ownerId===user.uid;canEdit=b.role!=="VIEWER"||isOwner;
+  cleanupBoard();currentBoard=b;isOwner=b.ownerId===user.uid;canEdit=b.role!=="VIEWER"||isOwner;
   renderBoardList();renderBoardHeader();
   memberUnsub=onSnapshot(collection(db,"boards",boardId,"members"),s=>{members=s.docs.map(d=>({id:d.id,...d.data()}));renderMembers();renderBoard();},e=>console.warn(e));
   taskUnsub=onSnapshot(query(collection(db,"tasks"),where("boardId","==",boardId)),s=>{
@@ -171,8 +177,9 @@ async function removeMember(uid){
 async function createBoard(){
   const name=prompt("Nome do novo quadro:");if(!name?.trim())return;
   try{
-    const boardId=id(),batch=writeBatch(db);
-    batch.set(boardRef(boardId),{name:name.trim(),ownerId:user.uid,createdAt:serverTimestamp(),updatedAt:serverTimestamp(),wip:{todo:0,doing:0,done:0}});
+    const boardId=id();
+    await setDoc(boardRef(boardId),{name:name.trim(),ownerId:user.uid,createdAt:serverTimestamp(),updatedAt:serverTimestamp(),wip:{todo:0,doing:0,done:0}});
+    const batch=writeBatch(db);
     batch.set(doc(db,"boards",boardId,"members",user.uid),{userId:user.uid,email:user.email,role:"OWNER",joinedAt:serverTimestamp()});
     batch.set(userMembershipRef(boardId),{boardId,name:name.trim(),ownerId:user.uid,role:"OWNER",joinedAt:serverTimestamp()});
     await batch.commit();toast("Quadro criado!");
