@@ -41,7 +41,7 @@ service cloud.firestore {
     }
 
     match /users/{userId}/memberships/{boardId} {
-      allow read, list: if signedIn() && request.auth.uid == userId;
+      allow read: if signedIn() && request.auth.uid == userId;
       allow create: if signedIn() && request.auth.uid == userId
         && (isOwner(boardId) || acceptedInvite(boardId, request.resource.data.inviteId));
       allow update: if signedIn() && request.auth.uid == userId && isOwner(boardId);
