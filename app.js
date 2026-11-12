@@ -148,7 +148,8 @@ async function selectBoard(boardId){
 }
 function renderBoardHeader(){
   if(!currentBoard)return;
-  $("#boardName").textContent=currentBoard.name||"Quadro";\n  $("#boardTitle").textContent=currentBoard.name||"Quadro";
+  $("#boardName").textContent=currentBoard.name||"Quadro";
+  $("#boardTitle").textContent=currentBoard.name||"Quadro";
   $("#boardRole").textContent=roleNames[currentBoard.role]||"Dono";
   $("#boardOwner").textContent=isOwner?"Você é o dono": "Quadro compartilhado";
   $("#inviteBtn").hidden=!isOwner;$("#manageMembersBtn").hidden=!isOwner;
