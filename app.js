@@ -355,7 +355,7 @@ function setupUI(){
   $("#cancelTaskModal").onclick=()=>$("#taskModal").classList.remove("open");
   $("#closeInviteModal").onclick=()=>$("#inviteModal").classList.remove("open");
   $("#closeMembersModal").onclick=()=>$("#membersModal").classList.remove("open");
-  $("#closeDetail").onclick=()=>{if(commentUnsub)commentUnsub();history.back();};
+  $("#closeDetail").onclick=()=>{if(commentUnsub)commentUnsub();location.href="/NexTask/";};
   $("#saveTaskDetail").onclick=saveTaskDetail;
   $("#commentForm").onsubmit=e=>{e.preventDefault();addComment();};
   $("#checklistForm").onsubmit=e=>{e.preventDefault();addChecklistItem();};
