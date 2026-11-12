@@ -83,11 +83,15 @@ async function ensurePersonalBoard(){
   const b=writeBatch(db);
   b.set(doc(db,"boards",boardId,"members",user.uid),{userId:user.uid,email:user.email,role:"OWNER",joinedAt:serverTimestamp()});
   b.set(userMembershipRef(boardId),{boardId,name:"Meu primeiro quadro",ownerId:user.uid,role:"OWNER",joinedAt:serverTimestamp()});
-  oldTasks.forEach(t=>{
-    const taskId=t.id||id();
-    b.set(taskRef(taskId),{...t,id:taskId,boardId,createdBy:user.uid,assigneeId:"",priority:t.priority||"medium",labels:t.labels||[],checklist:t.checklist||[],commentsCount:0,updatedAt:serverTimestamp()});
-  });
   await b.commit();
+  if(oldTasks.length){
+    const taskBatch=writeBatch(db);
+    oldTasks.forEach(t=>{
+      const taskId=t.id||id();
+      taskBatch.set(taskRef(taskId),{...t,id:taskId,boardId,createdBy:user.uid,assigneeId:"",priority:t.priority||"medium",labels:t.labels||[],checklist:t.checklist||[],commentsCount:0,updatedAt:serverTimestamp()});
+    });
+    await taskBatch.commit();
+  }
 }
 async function loadWorkspace(){
   await ensurePersonalBoard();
@@ -251,7 +255,7 @@ async function deleteTask(taskId){
   }catch(e){console.error(e);toast("Não foi possível excluir a tarefa.");}
 }
 function openTaskPage(taskId){
-  const url=new URL(location.href);url.searchParams.set("task",taskId);
+  const url=new URL(location.href);url.pathname="/NexTask/tasks/"+encodeURIComponent(taskId);url.searchParams.delete("task");
   window.open(url.toString(),"_blank","noopener");
 }
 function openTaskModal(){ $("#taskModal").classList.add("open"); }
@@ -315,7 +319,7 @@ async function addComment(){
   catch(e){console.error(e);toast("Não foi possível enviar o comentário.");}
 }
 async function openRouteTask(){
-  const taskId=new URLSearchParams(location.search).get("task");if(!taskId)return;
+  const pathMatch=location.pathname.match(/\\/tasks\\/([^/]+)/);\n  const taskId=new URLSearchParams(location.search).get("task")||(pathMatch?decodeURIComponent(pathMatch[1]):null);if(!taskId)return;
   currentRouteTask=taskId;
   show("task");
   detailUnsub=onSnapshot(taskRef(taskId),async snap=>{
@@ -365,7 +369,7 @@ onAuthStateChanged(auth,async u=>{
   if(!u){show("auth");return;}
   $("#userEmail").textContent=u.email||"Minha conta";
   $("#userAvatar").textContent=(u.email||"U")[0].toUpperCase();
-  if(new URLSearchParams(location.search).has("task")){await openRouteTask();return;}
+  if(new URLSearchParams(location.search).has("task")||/\\/tasks\\/[^/]+/.test(location.pathname)){await openRouteTask();return;}
   show("app");
   try{await loadWorkspace();}catch(e){console.error(e);toast("Erro ao preparar seus quadros.");}
 });
