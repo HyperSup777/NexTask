@@ -267,7 +267,9 @@ function renderTaskDetail(task){
   $("#detailAssignee").onchange=()=>{const m=members.find(x=>x.userId===$("#detailAssignee").value);updateTask(task.id,{assigneeId:m?.userId||"",assigneeEmail:m?.email||""});};
   $("#detailStatus").textContent=statusNames[task.status]||"A Fazer";
   $("#detailRoleNote").textContent=canEdit?"Você pode editar esta tarefa.":"Acesso de leitura: você não pode editar esta tarefa.";
+  $("#commentForm").hidden=!canEdit;
   $("#taskDetailView").classList.remove("hidden");
+  renderChecklist(task);
   loadComments(task.id);
 }
 function loadComments(taskId){
@@ -275,6 +277,18 @@ function loadComments(taskId){
   commentUnsub=onSnapshot(query(collection(db,"tasks",taskId,"comments"),orderBy("createdAt","asc")),snap=>{
     $("#commentsList").innerHTML=snap.docs.map(d=>{const c=d.data();return `<div class="comment"><strong>${safe(c.authorEmail||"Usuário")}</strong><small>${c.createdAt?.toDate?c.createdAt.toDate().toLocaleString("pt-BR"):"Agora"}</small><p>${safe(c.text)}</p></div>`;}).join("")||'<p class="muted">Ainda não há comentários.</p>';
   },e=>console.warn(e));
+}
+function renderChecklist(task){
+  const list=$("#checklistItems");
+  list.innerHTML=(task.checklist||[]).map((item,i)=>'<label class="check-item"><input type="checkbox" data-check-index="'+i+'" '+(item.done?"checked":"")+(canEdit?"":" disabled")+'><span>'+safe(item.text)+'</span><button type="button" data-check-remove="'+i+'" '+(canEdit?"":"hidden")+ '>×</button></label>').join("")||'<p class="muted">Nenhuma subtarefa adicionada.</p>';
+  $("[data-check-index]").forEach(el=>el.onchange=()=>{const arr=[...(selectedTask.checklist||[])];arr[Number(el.dataset.checkIndex)]={...arr[Number(el.dataset.checkIndex)],done:el.checked};updateTask(selectedTask.id,{checklist:arr});});
+  $("[data-check-remove]").forEach(el=>el.onclick=()=>{const arr=[...(selectedTask.checklist||[])];arr.splice(Number(el.dataset.checkRemove),1);updateTask(selectedTask.id,{checklist:arr});});
+  $("#checklistForm").hidden=!canEdit;
+}
+async function addChecklistItem(){
+  const textValue=$("#checklistInput").value.trim();if(!textValue||!selectedTask||!canEdit)return;
+  const arr=[...(selectedTask.checklist||[]),{id:id(),text:textValue,done:false}];
+  await updateTask(selectedTask.id,{checklist:arr});$("#checklistInput").value="";
 }
 async function saveTaskDetail(){
   if(!selectedTask||!canEdit)return;
@@ -323,6 +337,8 @@ function setupUI(){
   $("#closeDetail").onclick=()=>{if(commentUnsub)commentUnsub();history.back();};
   $("#saveTaskDetail").onclick=saveTaskDetail;
   $("#commentForm").onsubmit=e=>{e.preventDefault();addComment();};
+  $("#checklistForm").onsubmit=e=>{e.preventDefault();addChecklistItem();};
+  $("#closeInviteModal2").onclick=()=>$("#inviteModal").classList.remove("open");
   $("#taskSearch").oninput=renderBoard;
   $("#backlogToggle").onchange=renderBoard;
   $("#wipBtn").onclick=async()=>{
