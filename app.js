@@ -244,6 +244,12 @@ async function createTask(){
 }
 async function updateTask(taskId,patch){
   if(!canEdit)return;
+  if(patch.status){
+    const existing=tasks.find(t=>t.id===taskId);
+    const limit=currentBoard?.wip?.[patch.status]||0;
+    const count=tasks.filter(t=>t.status===patch.status&&t.id!==taskId).length;
+    if(existing&&existing.status!==patch.status&&limit&&count>=limit){toast("Limite WIP atingido nesta coluna.");return;}
+  }
   try{await updateDoc(taskRef(taskId),{...patch,updatedAt:serverTimestamp()});}
   catch(e){console.error(e);toast("Não foi possível atualizar a tarefa.");}
 }
