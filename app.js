@@ -325,7 +325,8 @@ async function addComment(){
   catch(e){console.error(e);toast("Não foi possível enviar o comentário.");}
 }
 async function openRouteTask(){
-  const pathMatch=location.pathname.match(/\\/tasks\\/([^/]+)/);\n  const taskId=new URLSearchParams(location.search).get("task")||(pathMatch?decodeURIComponent(pathMatch[1]):null);if(!taskId)return;
+  const pathMatch=location.pathname.match(/\/tasks\/([^/]+)/);
+  const taskId=new URLSearchParams(location.search).get("task")||(pathMatch?decodeURIComponent(pathMatch[1]):null);if(!taskId)return;
   currentRouteTask=taskId;
   show("task");
   detailUnsub=onSnapshot(taskRef(taskId),async snap=>{
