@@ -1,8 +1,98 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function myMembership(boardId) {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)/memberships/$(boardId));
+    }
+    function isMember(boardId) {
+      return signedIn() && myMembership(boardId).exists();
+    }
+    function isOwner(boardId) {
+      return signedIn()
+        && get(/databases/$(database)/documents/boards/$(boardId)).data.ownerId == request.auth.uid;
+    }
+    function canEdit(boardId) {
+      return isMember(boardId)
+        && myMembership(boardId).data.role in ['OWNER', 'EDITOR'];
+    }
+    function acceptedInvite(boardId, inviteId) {
+      return signedIn()
+        && inviteId is string
+        && getAfter(/databases/$(database)/documents/invites/$(inviteId)).data.boardId == boardId
+        && getAfter(/databases/$(database)/documents/invites/$(inviteId)).data.email == request.auth.token.email.lower()
+        && getAfter(/databases/$(database)/documents/invites/$(inviteId)).data.status == 'accepted'
+        && getAfter(/databases/$(database)/documents/invites/$(inviteId)).data.acceptedBy == request.auth.uid;
+    }
+
+    match /boards/{boardId} {
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow read: if isMember(boardId);
+      allow update, delete: if isOwner(boardId);
+
+      match /members/{memberId} {
+        allow read: if isMember(boardId);
+        allow create: if isOwner(boardId)
+          || (signedIn() && memberId == request.auth.uid
+              && request.resource.data.userId == request.auth.uid
+              && acceptedInvite(boardId, request.resource.data.inviteId));
+        allow update, delete: if isOwner(boardId);
+      }
+    }
+
+    match /users/{userId}/memberships/{boardId} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow create: if signedIn() && request.auth.uid == userId
+        && (isOwner(boardId) || acceptedInvite(boardId, request.resource.data.inviteId));
+      allow update: if signedIn() && isOwner(boardId);
+      allow delete: if signedIn() && (request.auth.uid == userId || isOwner(boardId));
+    }
+
     match /users/{userId}/kanban/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if signedIn() && request.auth.uid == userId;
+    }
+
+    match /invites/{inviteId} {
+      allow create: if signedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && isOwner(request.resource.data.boardId)
+        && request.resource.data.status == 'pending';
+      allow read: if signedIn()
+        && (resource.data.email == request.auth.token.email.lower()
+            || isOwner(resource.data.boardId));
+      allow update: if signedIn() && (
+        isOwner(resource.data.boardId)
+        || (resource.data.email == request.auth.token.email.lower()
+            && resource.data.status == 'pending'
+            && request.resource.data.status == 'accepted'
+            && request.resource.data.acceptedBy == request.auth.uid
+            && request.resource.data.boardId == resource.data.boardId
+            && request.resource.data.email == resource.data.email
+            && request.resource.data.ownerId == resource.data.ownerId
+            && request.resource.data.role == resource.data.role)
+      );
+      allow delete: if signedIn() && isOwner(resource.data.boardId);
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isMember(resource.data.boardId);
+      allow create: if canEdit(request.resource.data.boardId)
+        && request.resource.data.createdBy == request.auth.uid;
+      allow update: if canEdit(resource.data.boardId)
+        && request.resource.data.boardId == resource.data.boardId;
+      allow delete: if canEdit(resource.data.boardId);
+
+      match /comments/{commentId} {
+        function taskBoardId() {
+          return get(/databases/$(database)/documents/tasks/$(taskId)).data.boardId;
+        }
+        allow read: if isMember(taskBoardId());
+        allow create: if canEdit(taskBoardId())
+          && request.resource.data.authorId == request.auth.uid;
+        allow update: if canEdit(taskBoardId())
+          && (resource.data.authorId == request.auth.uid || isOwner(taskBoardId()));
+        allow delete: if canEdit(taskBoardId());
+      }
     }
   }
 }
