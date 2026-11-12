@@ -1,95 +1,48 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101828">
-  <meta name="description" content="Organize suas tarefas com clareza usando Meu Quadro.">
-  <title>Meu Quadro — Gestão de tarefas</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
-  <main id="authView" class="auth-layout">
-    <section class="auth-art">
-      <div class="brand brand-light"><span class="brand-icon">M</span><span>meu<span class="brand-soft">quadro</span></span></div>
-      <div class="art-copy">
-        <span class="eyebrow">CLAREZA PARA FAZER ACONTECER</span>
-        <h1>Seu trabalho.<br><em>Em movimento.</em></h1>
-        <p>Um espaço simples e organizado para transformar planos em entregas.</p>
-      </div>
-      <div class="art-bottom"><span class="art-line"></span><span>Planeje · Acompanhe · Conclua</span></div>
-      <div class="art-orb orb-one"></div><div class="art-orb orb-two"></div>
-    </section>
-    <section class="auth-panel">
-      <div class="auth-card">
-        <div class="mobile-brand brand"><span class="brand-icon">M</span><span>meu<span class="brand-soft">quadro</span></span></div>
-        <span class="eyebrow" id="authEyebrow">BEM-VINDO DE VOLTA</span>
-        <h2 id="authTitle">Acesse sua conta</h2>
-        <p class="auth-subtitle" id="authSubtitle">Entre para continuar de onde você parou.</p>
-        <form id="authForm">
-          <label class="field"><span>E-mail</span><input id="email" type="email" autocomplete="email" placeholder="voce@exemplo.com" required></label>
-          <label class="field"><span>Senha</span><div class="password-wrap"><input id="password" type="password" autocomplete="current-password" placeholder="Pelo menos 6 caracteres" minlength="6" required><button id="togglePassword" type="button" class="password-toggle" aria-label="Mostrar senha">◉</button></div></label>
-          <button class="text-button forgot" id="forgotPassword" type="button">Esqueceu a senha?</button>
-          <button class="btn btn-primary auth-submit" id="authSubmit" type="submit">Entrar <span>→</span></button>
-        </form>
-        <p class="auth-switch"><span id="switchText">Ainda não tem uma conta?</span> <button id="switchMode" class="text-button" type="button">Criar conta</button></p>
-        <p class="auth-legal">Sua conta é protegida pelo Firebase Authentication.</p>
-      </div>
-    </section>
-  </main>
-
-  <main id="appView" class="app-shell hidden">
-    <aside class="sidebar">
-      <a class="brand sidebar-brand" href="#" aria-label="Meu Quadro início"><span class="brand-icon">M</span><span>meu<span class="brand-soft">quadro</span></span></a>
-      <div class="workspace-label">ESPAÇO DE TRABALHO</div>
-      <button class="nav-item active" type="button"><span class="nav-symbol">▦</span> Meu quadro</button>
-      <div class="sidebar-bottom">
-        <div class="profile-chip"><div class="avatar" id="userAvatar">U</div><div class="profile-meta"><strong id="userEmail">Usuário</strong><small>Conta pessoal</small></div></div>
-        <button id="logoutBtn" class="logout-btn" type="button"><span>↪</span> Sair da conta</button>
-      </div>
-    </aside>
-
-    <section class="main-area">
-      <header class="topbar">
-        <div class="breadcrumb">Workspace <span>/</span> <strong>Meu quadro</strong></div>
-        <div class="top-actions"><span class="sync-status" id="syncStatus"><i></i> Conectando...</span><button class="avatar top-avatar" id="topAvatar" aria-label="Perfil" type="button">U</button></div>
-      </header>
-      <div class="content">
-        <section class="welcome-row">
-          <div><span class="eyebrow">SEU PAINEL DE PRODUTIVIDADE</span><h1>Meu quadro</h1><p>Organize prioridades e acompanhe cada etapa do seu trabalho.</p></div>
-          <button class="btn btn-primary" id="addTaskBtn" type="button"><span class="plus">＋</span> Nova tarefa</button>
-        </section>
-        <section class="stats-grid" aria-label="Resumo das tarefas">
-          <article class="stat-card"><div class="stat-icon stat-purple">▦</div><div><span>Total de tarefas</span><strong id="totalCount">0</strong></div><small class="stat-note">No seu quadro</small></article>
-          <article class="stat-card"><div class="stat-icon stat-amber">◷</div><div><span>Em andamento</span><strong id="doingCount">0</strong></div><small class="stat-note">Em execução</small></article>
-          <article class="stat-card"><div class="stat-icon stat-green">✓</div><div><span>Concluídas</span><strong id="doneCount">0</strong></div><small class="stat-note">Finalizadas</small></article>
-        </section>
-        <section class="board-heading"><div><h2>Fluxo de trabalho</h2><p>Arraste os cartões ou altere o status pelo menu.</p></div><span class="board-date" id="todayLabel"></span></section>
-        <section class="board" aria-label="Quadro Kanban">
-          <section class="column" data-status="todo"><header class="column-header"><div><span class="status-dot dot-todo"></span><h3>A Fazer</h3><span class="column-count" id="count-todo">0</span></div><button class="column-add" data-add-status="todo" type="button" aria-label="Adicionar em A Fazer">＋</button></header><div class="task-list" id="list-todo"></div></section>
-          <section class="column" data-status="doing"><header class="column-header"><div><span class="status-dot dot-doing"></span><h3>Em Andamento</h3><span class="column-count" id="count-doing">0</span></div><button class="column-add" data-add-status="doing" type="button" aria-label="Adicionar em andamento">＋</button></header><div class="task-list" id="list-doing"></div></section>
-          <section class="column" data-status="done"><header class="column-header"><div><span class="status-dot dot-done"></span><h3>Concluído</h3><span class="column-count" id="count-done">0</span></div><button class="column-add" data-add-status="done" type="button" aria-label="Adicionar concluída">＋</button></header><div class="task-list" id="list-done"></div></section>
-        </section>
-        <footer class="page-footer">Meu Quadro <span>·</span> Suas tarefas sincronizadas com segurança.</footer>
-      </div>
-    </section>
-  </main>
-
-  <div class="modal-backdrop" id="taskModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-    <form class="modal" id="taskForm">
-      <div class="modal-head"><div><span class="eyebrow">NOVA ATIVIDADE</span><h2 id="modalTitle">Adicionar tarefa</h2></div><button class="modal-close" id="closeModal" type="button" aria-label="Fechar">×</button></div>
-      <label class="field"><span>Título da tarefa</span><input id="taskTitle" maxlength="90" placeholder="Ex.: Preparar apresentação" required></label>
-      <label class="field"><span>Descrição <small>(opcional)</small></span><textarea id="taskDescription" maxlength="500" rows="4" placeholder="Adicione detalhes, etapas ou informações importantes..."></textarea></label>
-      <label class="field"><span>Status inicial</span><select id="taskStatus"><option value="todo">A Fazer</option><option value="doing">Em Andamento</option><option value="done">Concluído</option></select></label>
-      <div class="modal-actions"><button class="btn btn-quiet" id="cancelModal" type="button">Cancelar</button><button class="btn btn-primary" type="submit">Salvar tarefa <span>→</span></button></div>
-    </form>
-  </div>
-
-  <script type="module" src="app.js"></script>
-</body>
-</html>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#101828">
+<meta name="description" content="NexTask — organize, compartilhe e acompanhe tarefas em equipe."><title>NexTask — Gestão colaborativa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="styles.css">
+</head><body>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<main id="authView" class="auth-layout">
+<section class="auth-art"><div class="brand brand-light"><span class="brand-icon">N</span><span>Nex<span class="brand-soft">Task</span></span></div>
+<div class="art-copy"><span class="eyebrow">CLAREZA PARA FAZER ACONTECER</span><h1>Seu trabalho.<br><em>Em movimento.</em></h1><p>Organize tarefas, compartilhe quadros e faça entregas em equipe.</p></div><div class="art-bottom"><span class="art-line"></span><span>Planeje · Colabore · Conclua</span></div><div class="art-orb orb-one"></div><div class="art-orb orb-two"></div></section>
+<section class="auth-panel"><div class="auth-card"><div class="mobile-brand brand"><span class="brand-icon">N</span><span>Nex<span class="brand-soft">Task</span></span></div>
+<span class="eyebrow" id="authEyebrow">BEM-VINDO DE VOLTA</span><h2 id="authTitle">Acesse sua conta</h2><p class="auth-subtitle" id="authSubtitle">Entre para continuar de onde você parou.</p>
+<form id="authForm"><label class="field"><span>E-mail</span><input id="email" type="email" autocomplete="email" placeholder="voce@exemplo.com" required></label>
+<label class="field"><span>Senha</span><input id="password" type="password" autocomplete="current-password" placeholder="Pelo menos 6 caracteres" minlength="6" required></label>
+<button class="text-button forgot" id="forgotPassword" type="button">Esqueceu a senha?</button><button class="btn btn-primary auth-submit" id="authSubmit" type="submit">Entrar →</button></form>
+<p class="auth-switch"><span id="switchText">Ainda não tem uma conta?</span> <button id="switchMode" class="text-button" type="button">Criar conta</button></p><p class="auth-legal">Sua conta é protegida pelo Firebase Authentication.</p></div></section></main>
+<main id="appView" class="app-shell hidden">
+<aside class="sidebar"><a class="brand sidebar-brand" href="#"><span class="brand-icon">N</span><span>Nex<span class="brand-soft">Task</span></span></a>
+<div class="workspace-label">MEUS QUADROS</div><div id="myBoards" class="board-nav-list"></div>
+<div class="workspace-label shared-label">COMPARTILHADOS COMIGO</div><div id="sharedBoards" class="board-nav-list"></div>
+<button id="createBoardBtn" class="create-board-btn">＋ Novo quadro</button>
+<div class="sidebar-bottom"><div class="profile-chip"><div class="avatar" id="userAvatar">U</div><div class="profile-meta"><strong id="userEmail">Usuário</strong><small>Conta NexTask</small></div></div><button id="logoutBtn" class="logout-btn">↪ Sair da conta</button></div></aside>
+<section class="main-area"><header class="topbar"><div class="breadcrumb">Workspace <span>/</span> <strong id="boardName">Meu quadro</strong></div><div class="top-actions"><span class="role-pill" id="boardRole">Dono</span><button class="avatar top-avatar" id="topAvatar" type="button">U</button></div></header>
+<div class="content"><section class="welcome-row"><div><span class="eyebrow">SEU PAINEL DE PRODUTIVIDADE</span><h1 id="boardTitle">Meu quadro</h1><p id="boardOwner">Organize prioridades e acompanhe cada etapa.</p></div><div class="welcome-actions"><button class="btn btn-quiet" id="manageMembersBtn">Pessoas</button><button class="btn btn-quiet" id="inviteBtn">＋ Convidar</button><button class="btn btn-primary" id="addTaskBtn">＋ Nova tarefa</button></div></section>
+<div id="inviteInbox" class="invite-inbox"></div>
+<section class="stats-grid"><article class="stat-card"><div class="stat-icon stat-purple">▦</div><div><span>Total de tarefas</span><strong id="totalCount">0</strong></div></article><article class="stat-card"><div class="stat-icon stat-amber">◷</div><div><span>Em andamento</span><strong id="doingCount">0</strong></div></article><article class="stat-card"><div class="stat-icon stat-green">✓</div><div><span>Concluídas</span><strong id="doneCount">0</strong></div></article></section>
+<section class="board-heading"><div><h2>Fluxo de trabalho</h2><p>Abra um cartão para ver detalhes, comentários e checklist.</p></div><span id="boardDate" class="board-date"></span></section>
+<div class="board-tools"><input id="taskSearch" type="search" placeholder="Buscar tarefa..."><label class="backlog-filter"><input type="checkbox" id="backlogToggle"> Mostrar apenas backlog</label><button id="wipBtn" class="text-button">Limites WIP</button><span id="boardWip" class="muted"></span></div>
+<section class="board"><section class="column" data-status="todo"><header class="column-header"><div><span class="status-dot dot-todo"></span><h3>A Fazer</h3><span class="column-count" id="count-todo">0</span></div></header><div class="task-list" id="list-todo"></div></section>
+<section class="column" data-status="doing"><header class="column-header"><div><span class="status-dot dot-doing"></span><h3>Em Andamento</h3><span class="column-count" id="count-doing">0</span></div></header><div class="task-list" id="list-doing"></div></section>
+<section class="column" data-status="done"><header class="column-header"><div><span class="status-dot dot-done"></span><h3>Concluído</h3><span class="column-count" id="count-done">0</span></div></header><div class="task-list" id="list-done"></div></section></section>
+<footer class="page-footer">NexTask <span>·</span> Seu trabalho em movimento.</footer></div></section></main>
+<div class="modal-backdrop" id="taskModal"><form class="modal" id="taskForm"><div class="modal-head"><div><span class="eyebrow">NOVA ATIVIDADE</span><h2>Adicionar tarefa</h2></div><button class="modal-close" id="closeTaskModal" type="button">×</button></div>
+<label class="field"><span>Título</span><input id="taskTitle" maxlength="120" required placeholder="Ex.: Preparar apresentação"></label><label class="field"><span>Descrição</span><textarea id="taskDescription" rows="3" placeholder="Detalhes da tarefa..."></textarea></label><label class="field"><span>Status inicial</span><select id="taskStatus"><option value="todo">A Fazer</option><option value="doing">Em Andamento</option><option value="done">Concluído</option></select></label><div class="modal-actions"><button class="btn btn-quiet" id="cancelTaskModal" type="button">Cancelar</button><button class="btn btn-primary" type="submit">Criar tarefa →</button></div></form></div>
+<div class="modal-backdrop" id="inviteModal"><form class="modal" id="inviteForm"><div class="modal-head"><div><span class="eyebrow">COLABORAÇÃO</span><h2>Convidar pessoa</h2></div><button class="modal-close" id="closeInviteModal" type="button">×</button></div><label class="field"><span>E-mail do usuário</span><input id="inviteEmail" type="email" required placeholder="pessoa@exemplo.com"></label><label class="field"><span>Permissão</span><select id="inviteRole"><option value="EDITOR">Editor — pode alterar tarefas</option><option value="VIEWER">Leitor — somente visualizar</option></select></label><p class="muted">A pessoa verá o convite ao entrar no NexTask com esse mesmo e-mail.</p><div class="modal-actions"><button class="btn btn-quiet" id="closeInviteModal2" type="button">Cancelar</button><button class="btn btn-primary" type="submit">Enviar convite →</button></div></form></div>
+<div class="modal-backdrop" id="membersModal"><section class="modal"><div class="modal-head"><div><span class="eyebrow">ACESSOS DO QUADRO</span><h2>Pessoas e permissões</h2></div><button class="modal-close" id="closeMembersModal" type="button">×</button></div><div id="memberList" class="member-list"></div><h3 class="subheading">Convites pendentes</h3><div id="pendingInvites"></div></section></div>
+<main id="taskDetailView" class="task-detail-page hidden"><header class="detail-topbar"><button id="closeDetail" class="btn btn-quiet">← Voltar</button><strong>NexTask / Detalhes da tarefa</strong><span id="detailStatus" class="role-pill">A Fazer</span></header>
+<div class="detail-layout"><section class="detail-main"><span class="eyebrow">TAREFA</span><h1 id="taskDetailTitle">Tarefa</h1><p id="detailRoleNote" class="muted"></p><label class="field"><span>Descrição</span><textarea id="taskDetailDescription" rows="4"></textarea></label>
+<div class="detail-grid"><label class="field"><span>Responsável</span><select id="detailAssignee"></select></label><label class="field"><span>Prazo</span><input id="detailDueDate" type="date"></label><label class="field"><span>Prioridade</span><select id="detailPriority"><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option></select></label><label class="field"><span>Etiquetas (separe por vírgula)</span><input id="detailLabels" placeholder="bug, feature, urgente"></label></div>
+<div class="detail-grid"><label class="field"><span>Sprint</span><input id="detailSprint" placeholder="Ex.: Sprint 1"></label><label class="field"><span>Story points</span><input id="detailPoints" type="number" min="0" max="100"></label></div>
+<label class="checkline"><input id="detailBacklog" type="checkbox"> Esta tarefa está no backlog</label>
+<label class="field"><span>Critérios de aceite</span><textarea id="detailCriteria" rows="3"></textarea></label><label class="field"><span>Definition of Done</span><textarea id="detailDone" rows="3"></textarea></label>
+<button id="saveTaskDetail" class="btn btn-primary">Salvar alterações</button>
+<section class="comments-section"><h2>Comentários</h2><div id="commentsList"></div><form id="commentForm" class="comment-form"><textarea id="commentText" rows="2" placeholder="Escreva um comentário..." required></textarea><button class="btn btn-primary" type="submit">Comentar</button></form></section></section>
+<aside class="detail-side"><h3>Checklist</h3><p class="muted">A lista de subtarefas será exibida aqui em uma próxima etapa.</p></aside></div></main>
+<script type="module" src="app.js"></script></body></html>
