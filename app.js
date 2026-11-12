@@ -133,7 +133,9 @@ async function acceptInvite(inviteId){
 }
 async function selectBoard(boardId){
   const b=boards.find(x=>x.id===boardId);if(!b)return;
-  cleanupBoard();currentBoard=b;isOwner=b.ownerId===user.uid;canEdit=b.role!=="VIEWER"||isOwner;
+  cleanupBoard();
+  const boardSnap=await getDoc(boardRef(boardId));if(!boardSnap.exists())return;
+  currentBoard={id:boardId,...boardSnap.data(),...b};isOwner=b.ownerId===user.uid;canEdit=b.role!=="VIEWER"||isOwner;
   renderBoardList();renderBoardHeader();
   memberUnsub=onSnapshot(collection(db,"boards",boardId,"members"),s=>{members=s.docs.map(d=>({id:d.id,...d.data()}));renderMembers();renderBoard();},e=>console.warn(e));
   taskUnsub=onSnapshot(query(collection(db,"tasks"),where("boardId","==",boardId)),s=>{
@@ -146,7 +148,7 @@ async function selectBoard(boardId){
 }
 function renderBoardHeader(){
   if(!currentBoard)return;
-  $("#boardName").textContent=currentBoard.name||"Quadro";
+  $("#boardName").textContent=currentBoard.name||"Quadro";\n  $("#boardTitle").textContent=currentBoard.name||"Quadro";
   $("#boardRole").textContent=roleNames[currentBoard.role]||"Dono";
   $("#boardOwner").textContent=isOwner?"Você é o dono": "Quadro compartilhado";
   $("#inviteBtn").hidden=!isOwner;$("#manageMembersBtn").hidden=!isOwner;
