@@ -61,6 +61,7 @@ function authError(e){
 function show(view){
   $("#authView").classList.toggle("hidden",view!=="auth");
   $("#appView").classList.toggle("hidden",view!=="app");
+  $("#taskDetailView").classList.toggle("hidden",view!=="task");
 }
 function cleanup(){
   [boardUnsub,taskUnsub,memberUnsub,inviteUnsub,detailUnsub,commentUnsub].forEach(fn=>{if(fn)fn();});
