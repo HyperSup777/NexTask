@@ -127,7 +127,7 @@ async function acceptInvite(inviteId){
     const batch=writeBatch(db);
     batch.update(ref,{status:"accepted",acceptedBy:user.uid,acceptedAt:serverTimestamp()});
     batch.set(doc(db,"boards",inv.boardId,"members",user.uid),{userId:user.uid,email:user.email,role:inv.role,inviteId,joinedAt:serverTimestamp()});
-    batch.set(userMembershipRef(inv.boardId),{boardId:inv.boardId,name:inv.boardName,ownerId:inv.ownerId,role:inv.role,joinedAt:serverTimestamp()});
+    batch.set(userMembershipRef(inv.boardId),{boardId:inv.boardId,name:inv.boardName,ownerId:inv.ownerId,role:inv.role,inviteId,joinedAt:serverTimestamp()});
     await batch.commit();toast("Você entrou no quadro compartilhado!");
   }catch(e){console.error(e);toast(e.message||"Não foi possível aceitar o convite.");}
 }
@@ -143,7 +143,7 @@ async function selectBoard(boardId){
     renderBoard();
   },e=>{console.error(e);toast("Não foi possível carregar as tarefas.");});
   if(isOwner){
-    inviteUnsub=onSnapshot(query(collection(db,"invites"),where("boardId","==",boardId),where("status","==","pending")),s=>{renderPendingInvites(s.docs.map(d=>({id:d.id,...d.data()})));},e=>console.warn(e));
+    boardPendingUnsub=onSnapshot(query(collection(db,"invites"),where("boardId","==",boardId),where("status","==","pending")),s=>{renderPendingInvites(s.docs.map(d=>({id:d.id,...d.data()})));},e=>console.warn(e));
   }else{$("#pendingInvites").innerHTML="";}
 }
 function renderBoardHeader(){
