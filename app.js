@@ -238,6 +238,7 @@ function createTaskCard(t){
   return el;
 }
 async function createTask(){
+  toast("Permissão: " + canEdit);
   if(!canEdit)return;
   const title=$("#taskTitle").value.trim();if(!title)return;
   try{
