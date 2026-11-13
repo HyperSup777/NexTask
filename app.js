@@ -26,7 +26,7 @@ function normalizeRole(role){
 let user=null, boards=[], currentBoard=null, members=[], tasks=[], invites=[];
 let boardUnsub=null, taskUnsub=null, memberUnsub=null, inviteUnsub=null, boardPendingUnsub=null, activityUnsub=null;
 let mode="login", selectedTask=null, detailUnsub=null, commentUnsub=null;
-let canEdit=false, isOwner=false, currentRouteTask=null, saveBusy=false;
+let canEdit=false, isOwner=false, currentRouteTask=null, saveBusy=false, boardSelectionToken=0;
 
 const toast = (message) => {
   const el=$("#toast"); el.textContent=message; el.classList.add("show");
@@ -172,6 +172,7 @@ async function acceptInvite(inviteId){
 async function selectBoard(boardId){
   const membership=boards.find(x=>x.id===boardId);
   if(!membership)return;
+  const selectionToken=++boardSelectionToken;
   cleanupBoard();
   currentBoard=null;tasks=[];members=[];
   renderBoard();
@@ -180,6 +181,7 @@ async function selectBoard(boardId){
     if(!boardSnap.exists())throw new Error("O quadro não foi encontrado ou sua conta não tem acesso.");
     const boardData=boardSnap.data();
     const permission=await refreshBoardPermissions(boardId,membership);
+    if(selectionToken!==boardSelectionToken)return;
     isOwner=permission.isOwner;
     const role=permission.role;
     currentBoard={id:boardId,...membership,...boardData,ownerId:boardData.ownerId||membership.ownerId,role};
@@ -190,6 +192,7 @@ async function selectBoard(boardId){
         setDoc(doc(db,"boards",boardId,"members",user.uid),{userId:user.uid,email:user.email,role:"OWNER"},{merge:true})
       ]);
     }
+    if(selectionToken!==boardSelectionToken)return;
     renderBoardList();renderBoardHeader();renderBoard();
     memberUnsub=onSnapshot(collection(db,"boards",boardId,"members"),s=>{
       members=s.docs.map(d=>({id:d.id,...d.data()}));renderMembers();renderBoard();
@@ -204,6 +207,7 @@ async function selectBoard(boardId){
       },e=>console.warn("Convites:",e));
     }else{$("#pendingInvites").innerHTML="";}
   }catch(e){
+    if(selectionToken!==boardSelectionToken)return;
     console.error("Falha ao abrir quadro:",e);
     currentBoard=null;canEdit=false;isOwner=false;tasks=[];members=[];
     renderBoardList();renderBoard();
