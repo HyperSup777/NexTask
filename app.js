@@ -241,7 +241,17 @@ function createTaskCard(t){
   return el;
 }
 async function createTask(){
-  toast("Permissão: " + canEdit);
+  const diagnostic = {
+    email: user?.email || "(sem email)",
+    uid: user?.uid || "(sem uid)",
+    boardId: currentBoard?.id || "(sem quadro)",
+    boardOwnerId: currentBoard?.ownerId || "(vazio)",
+    role: currentBoard?.role || "(vazio)",
+    isOwner,
+    canEdit
+  };
+  console.log("NexTask diagnóstico de permissão:", diagnostic);
+  toast("Diagnóstico: " + JSON.stringify(diagnostic));
   if(!canEdit)return;
   const title=$("#taskTitle").value.trim();if(!title)return;
   try{
