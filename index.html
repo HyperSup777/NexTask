@@ -8,16 +8,16 @@
 </head><body>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <main id="authView" class="auth-layout">
-<section class="auth-art"><div class="brand brand-light"><span class="brand-icon">N</span><span>Nex<span class="brand-soft">Task</span></span></div>
+<section class="auth-art"><a class="brand brand-light" href="/NexTask/" aria-label="Voltar à página inicial"><span class="brand-icon">N</span><span>Nex<span class="brand-soft">Task</span></span></a>
 <div class="art-copy"><span class="eyebrow">CLAREZA PARA FAZER ACONTECER</span><h1>Seu trabalho.<br><em>Em movimento.</em></h1><p>Organize tarefas, compartilhe quadros e faça entregas em equipe.</p></div><div class="art-bottom"><span class="art-line"></span><span>Planeje · Colabore · Conclua</span></div><div class="art-orb orb-one"></div><div class="art-orb orb-two"></div></section>
-<section class="auth-panel"><div class="auth-card"><div class="mobile-brand brand"><span class="brand-icon">N</span><span>Nex<span class="brand-soft">Task</span></span></div>
+<section class="auth-panel"><div class="auth-card"><a class="mobile-brand brand" href="/NexTask/" aria-label="Voltar à página inicial"><span class="brand-icon">N</span><span>Nex<span class="brand-soft">Task</span></span></a>
 <span class="eyebrow" id="authEyebrow">BEM-VINDO DE VOLTA</span><h2 id="authTitle">Acesse sua conta</h2><p class="auth-subtitle" id="authSubtitle">Entre para continuar de onde você parou.</p>
 <form id="authForm"><label class="field"><span>E-mail</span><input id="email" type="email" autocomplete="email" placeholder="voce@exemplo.com" required></label>
-<label class="field"><span>Senha</span><input id="password" type="password" autocomplete="current-password" placeholder="Pelo menos 6 caracteres" minlength="6" required></label>
+<label class="field"><span>Senha</span><div class="password-wrap"><input id="password" type="password" autocomplete="current-password" placeholder="Pelo menos 6 caracteres" minlength="6" required><button class="password-toggle" id="passwordToggle" type="button" aria-label="Mostrar senha" aria-pressed="false">Mostrar</button></div></label>
 <button class="text-button forgot" id="forgotPassword" type="button">Esqueceu a senha?</button><button class="btn btn-primary auth-submit" id="authSubmit" type="submit">Entrar →</button></form>
 <p class="auth-switch"><span id="switchText">Ainda não tem uma conta?</span> <button id="switchMode" class="text-button" type="button">Criar conta</button></p><p class="auth-legal">Sua conta é protegida pelo Firebase Authentication.</p></div></section></main>
 <main id="appView" class="app-shell hidden">
-<aside class="sidebar"><a class="brand sidebar-brand" href="#"><span class="brand-icon">N</span><span>Nex<span class="brand-soft">Task</span></span></a>
+<aside class="sidebar"><a class="brand sidebar-brand" href="/NexTask/" aria-label="Página inicial"><span class="brand-icon">N</span><span>Nex<span class="brand-soft">Task</span></span></a>
 <div class="workspace-label">MEUS QUADROS</div><div id="myBoards" class="board-nav-list"></div>
 <div class="workspace-label shared-label">COMPARTILHADOS COMIGO</div><div id="sharedBoards" class="board-nav-list"></div>
 <button id="createBoardBtn" class="create-board-btn">＋ Novo quadro</button>
