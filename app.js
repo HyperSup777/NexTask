@@ -39,6 +39,22 @@ const userMembershipRef = boardId => doc(db,"users",user.uid,"memberships",board
 const boardRef = boardId => doc(db,"boards",boardId);
 const taskRef = taskId => doc(db,"tasks",taskId);
 
+async function refreshBoardPermissions(boardId, membershipHint={}) {
+  const [boardSnap,membershipSnap]=await Promise.all([
+    getDoc(boardRef(boardId)),
+    getDoc(userMembershipRef(boardId))
+  ]);
+  const boardData=boardSnap.exists()?boardSnap.data():{};
+  const membership=membershipSnap.exists()?membershipSnap.data():membershipHint;
+  isOwner=boardData.ownerId===user.uid || membership.ownerId===user.uid;
+  const role=isOwner?"OWNER":normalizeRole(membership.role);
+  canEdit=isOwner||["OWNER","EDITOR"].includes(role);
+  if(currentBoard?.id===boardId){
+    currentBoard={...currentBoard,...boardData,...membership,ownerId:boardData.ownerId||membership.ownerId,role};
+  }
+  return {isOwner,role,canEdit,boardData,membership};
+}
+
 function setAuthMode(next){
   mode=next; const login=mode==="login";
   $("#authEyebrow").textContent=login?"BEM-VINDO DE VOLTA":"COMECE POR AQUI";
@@ -156,13 +172,14 @@ async function selectBoard(boardId){
   cleanupBoard();
   const boardSnap=await getDoc(boardRef(boardId));if(!boardSnap.exists())return;
   const boardData=boardSnap.data();
-  isOwner=boardData.ownerId===user.uid;
-  const role=isOwner?"OWNER":normalizeRole(membership.role);
+  const permission=await refreshBoardPermissions(boardId,membership);
+  isOwner=permission.isOwner;
+  const role=permission.role;
   currentBoard={id:boardId,...membership,...boardData,ownerId:boardData.ownerId||membership.ownerId,role};
-  canEdit=isOwner||["OWNER","EDITOR"].includes(role);
+  canEdit=permission.canEdit;
 
-  // Corrige dados de participação somente quando ownerId confirma a propriedade.
-  if(isOwner){
+  // Corrige os registros do proprietário quando o documento do quadro confirma a propriedade.
+  if(boardData.ownerId===user.uid){
     await Promise.all([
       setDoc(userMembershipRef(boardId),{boardId,name:currentBoard.name||"Meu quadro",ownerId:user.uid,role:"OWNER"},{merge:true}),
       setDoc(doc(db,"boards",boardId,"members",user.uid),{userId:user.uid,email:user.email,role:"OWNER"},{merge:true})
@@ -273,7 +290,17 @@ function createTaskCard(t){
 async function createTask(){
   const submitButton=$("#taskForm button[type='submit']");
   if(!currentBoard?.id){toast("Abra um quadro antes de criar uma tarefa.");return;}
-  if(!canEdit){toast("Sua conta está com acesso de leitura neste quadro.");return;}
+  try {
+    const permission=await refreshBoardPermissions(currentBoard.id,currentBoard);
+    if(!permission.canEdit){
+      toast("Acesso de leitura. O quadro não reconheceu sua conta como Dono ou Editor.");
+      return;
+    }
+  } catch(permissionError) {
+    console.error("Falha ao conferir permissão:",permissionError);
+    toast("Não foi possível confirmar sua permissão. Recarregue o quadro.");
+    return;
+  }
   const title=$("#taskTitle").value.trim();
   if(!title){$("#taskTitle").focus();toast("Digite um título para a tarefa.");return;}
   if(submitButton.disabled)return;
