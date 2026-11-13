@@ -76,7 +76,7 @@ service cloud.firestore {
     }
 
     match /tasks/{taskId} {
-      allow read: if isMember(resource.data.boardId);
+      allow read: if isOwner(resource.data.boardId) || isMember(resource.data.boardId);
       allow create: if canEdit(request.resource.data.boardId)
         && request.resource.data.createdBy == request.auth.uid;
       allow update: if canEdit(resource.data.boardId)
@@ -87,7 +87,7 @@ service cloud.firestore {
         function taskBoardId() {
           return get(/databases/$(database)/documents/tasks/$(taskId)).data.boardId;
         }
-        allow read: if isMember(taskBoardId());
+        allow read: if isOwner(taskBoardId()) || isMember(taskBoardId());
         allow create: if canEdit(taskBoardId())
           && request.resource.data.authorId == request.auth.uid;
         allow update, delete: if false;
@@ -97,7 +97,7 @@ service cloud.firestore {
         function taskBoardId() {
           return get(/databases/$(database)/documents/tasks/$(taskId)).data.boardId;
         }
-        allow read: if isMember(taskBoardId());
+        allow read: if isOwner(taskBoardId()) || isMember(taskBoardId());
         allow create: if canEdit(taskBoardId())
           && request.resource.data.authorId == request.auth.uid;
         allow update: if canEdit(taskBoardId())
