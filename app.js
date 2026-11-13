@@ -24,7 +24,7 @@ function normalizeRole(role){
   return "VIEWER";
 }
 let user=null, boards=[], currentBoard=null, members=[], tasks=[], invites=[];
-let boardUnsub=null, taskUnsub=null, memberUnsub=null, inviteUnsub=null, boardPendingUnsub=null;
+let boardUnsub=null, taskUnsub=null, memberUnsub=null, inviteUnsub=null, boardPendingUnsub=null, activityUnsub=null;
 let mode="login", selectedTask=null, detailUnsub=null, commentUnsub=null;
 let canEdit=false, isOwner=false, currentRouteTask=null, saveBusy=false;
 
@@ -95,8 +95,8 @@ function show(view){
   $("#taskDetailView").classList.toggle("hidden",view!=="task");
 }
 function cleanupBoard(){
-  [taskUnsub,memberUnsub,boardPendingUnsub,detailUnsub,commentUnsub].forEach(fn=>{if(fn)fn();});
-  taskUnsub=memberUnsub=boardPendingUnsub=detailUnsub=commentUnsub=null;
+  [taskUnsub,memberUnsub,boardPendingUnsub,detailUnsub,commentUnsub,activityUnsub].forEach(fn=>{if(fn)fn();});
+  taskUnsub=memberUnsub=boardPendingUnsub=detailUnsub=commentUnsub=activityUnsub=null;
 }
 function cleanup(){
   cleanupBoard();
@@ -202,6 +202,10 @@ function renderBoardHeader(){
   $("#boardTitle").textContent=currentBoard.name||"Quadro";
   $("#boardRole").textContent=roleNames[normalizeRole(currentBoard.role)]||"Leitor";
   $("#boardOwner").textContent=isOwner?"Você é o dono": "Quadro compartilhado";
+  ["todo","doing","done"].forEach(status=>{
+    const title=currentBoard.columnNames?.[status];
+    if(title)$("#column-title-"+status).textContent=title;
+  });
   $("#inviteBtn").hidden=!isOwner;$("#manageMembersBtn").hidden=!isOwner;
   $("#addTaskBtn").hidden=!canEdit;
 }
@@ -308,7 +312,7 @@ async function createTask(){
   const originalLabel=submitButton.textContent;
   submitButton.textContent="Salvando...";
   try{
-    await addDoc(collection(db,"tasks"),{
+    const taskRefCreated=await addDoc(collection(db,"tasks"),{
       boardId:currentBoard.id,title,
       description:$("#taskDescription").value.trim(),
       status:$("#taskStatus").value,
@@ -318,6 +322,7 @@ async function createTask(){
       sprint:"",storyPoints:0,acceptanceCriteria:"",
       definitionOfDone:"",createdAt:serverTimestamp(),updatedAt:serverTimestamp()
     });
+    await logTaskActivity(taskRefCreated.id,"Criou a tarefa");
     $("#taskModal").classList.remove("open");
     $("#taskForm").reset();
     toast("Tarefa criada.");
@@ -339,8 +344,11 @@ async function updateTask(taskId,patch){
     const count=tasks.filter(t=>t.status===patch.status&&t.id!==taskId).length;
     if(existing&&existing.status!==patch.status&&limit&&count>=limit){toast("Limite WIP atingido nesta coluna.");return;}
   }
-  try{await updateDoc(taskRef(taskId),{...patch,updatedAt:serverTimestamp()});}
-  catch(e){console.error(e);toast("Não foi possível atualizar a tarefa.");}
+  try{
+    await updateDoc(taskRef(taskId),{...patch,updatedAt:serverTimestamp()});
+    const changed=Object.keys(patch).map(key=>({status:"Status",assigneeId:"Responsável",dueDate:"Prazo",priority:"Prioridade",labels:"Etiquetas",description:"Descrição",backlog:"Backlog",sprint:"Sprint",storyPoints:"Story points",acceptanceCriteria:"Critérios de aceite",definitionOfDone:"Definition of Done",checklist:"Checklist"}[key]||key));
+    await logTaskActivity(taskId,"Atualizou: "+changed.join(", "));
+  }catch(e){console.error(e);toast("Não foi possível atualizar a tarefa.");}
 }
 async function deleteTask(taskId){
   if(!canEdit||!confirm("Excluir esta tarefa e seus comentários?"))return;
@@ -377,6 +385,21 @@ function renderTaskDetail(task){
   $("#taskDetailView").classList.remove("hidden");
   renderChecklist(task);
   loadComments(task.id);
+  loadActivity(task.id);
+}
+function loadActivity(taskId){
+  if(activityUnsub)activityUnsub();
+  activityUnsub=onSnapshot(query(collection(db,"tasks",taskId,"activity"),orderBy("createdAt","desc")),snap=>{
+    $("#activityList").innerHTML=snap.docs.map(d=>{
+      const a=d.data();
+      const when=a.createdAt?.toDate?a.createdAt.toDate().toLocaleString("pt-BR"):"Agora";
+      return `<div class="activity-item"><strong>${safe(a.authorEmail||"Usuário")}</strong> <span>${safe(a.message||"Atualizou a tarefa")}</span><small>${when}</small></div>`;
+    }).join("")||'<p class="muted">Nenhuma atividade registrada ainda.</p>';
+  },e=>{console.error("Histórico:",e);$("#activityList").innerHTML='<p class="muted">Histórico indisponível.</p>';});
+}
+async function logTaskActivity(taskId,message){
+  try{await addDoc(collection(db,"tasks",taskId,"activity"),{message,authorId:user.uid,authorEmail:user.email,createdAt:serverTimestamp()});}
+  catch(e){console.warn("Não foi possível registrar histórico:",e);}
 }
 function loadComments(taskId){
   if(commentUnsub)commentUnsub();
@@ -454,9 +477,26 @@ function setupUI(){
   $("#backlogToggle").onchange=renderBoard;
   $("#wipBtn").onclick=async()=>{
     if(!isOwner)return toast("Somente o dono pode configurar limites WIP.");
-    const val=prompt("Limite de tarefas em andamento (0 = sem limite):",currentBoard.wip?.doing||0);
-    if(val===null)return;const n=Math.max(0,Number(val)||0);
-    try{await updateDoc(boardRef(currentBoard.id),{wip:{...(currentBoard.wip||{}),doing:n}});currentBoard.wip={...(currentBoard.wip||{}),doing:n};renderBoard();toast("Limite WIP atualizado.");}catch(e){toast("Não foi possível salvar o limite.");}
+    const next={...(currentBoard.wip||{})};
+    for(const [status,label] of [["todo","A Fazer"],["doing","Em Andamento"],["done","Concluído"]]){
+      const value=prompt("Limite WIP para "+(currentBoard.columnNames?.[status]||label)+" (0 = sem limite):",next[status]||0);
+      if(value===null)return;
+      next[status]=Math.max(0,Math.floor(Number(value)||0));
+    }
+    try{await updateDoc(boardRef(currentBoard.id),{wip:next});currentBoard.wip=next;renderBoard();toast("Limites WIP atualizados.");}
+    catch(e){console.error(e);toast("Não foi possível salvar os limites WIP.");}
+  };
+  $("#columnsBtn").onclick=async()=>{
+    if(!isOwner)return toast("Somente o dono pode personalizar as colunas.");
+    const next={...(currentBoard.columnNames||{})};
+    for(const [status,label] of [["todo","A Fazer"],["doing","Em Andamento"],["done","Concluído"]]){
+      const value=prompt("Nome da coluna "+label+":",next[status]||label);
+      if(value===null)return;
+      if(!value.trim())return toast("O nome da coluna não pode ficar vazio.");
+      next[status]=value.trim().slice(0,30);
+    }
+    try{await updateDoc(boardRef(currentBoard.id),{columnNames:next});currentBoard.columnNames=next;renderBoardHeader();toast("Colunas personalizadas.");}
+    catch(e){console.error(e);toast("Não foi possível salvar os nomes das colunas.");}
   };
   $$(".column").forEach(col=>{
     col.addEventListener("dragover",e=>{if(canEdit)e.preventDefault();});
