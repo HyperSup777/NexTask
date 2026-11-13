@@ -135,7 +135,10 @@ async function selectBoard(boardId){
   const b=boards.find(x=>x.id===boardId);if(!b)return;
   cleanupBoard();
   const boardSnap=await getDoc(boardRef(boardId));if(!boardSnap.exists())return;
-  currentBoard={id:boardId,...boardSnap.data(),...b};isOwner=b.ownerId===user.uid;canEdit=b.role!=="VIEWER"||isOwner;
+  const boardData=boardSnap.data();
+  isOwner=boardData.ownerId===user.uid;
+  currentBoard={id:boardId,...b,...boardData,role:isOwner?"OWNER":b.role};
+  canEdit=isOwner||b.role==="OWNER"||b.role==="EDITOR";
   renderBoardList();renderBoardHeader();
   memberUnsub=onSnapshot(collection(db,"boards",boardId,"members"),s=>{members=s.docs.map(d=>({id:d.id,...d.data()}));renderMembers();renderBoard();},e=>console.warn(e));
   taskUnsub=onSnapshot(query(collection(db,"tasks"),where("boardId","==",boardId)),s=>{
