@@ -16,6 +16,13 @@ const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const statusNames = { todo:"A Fazer", doing:"Em Andamento", done:"Concluído" };
 const roleNames = { OWNER:"Dono", EDITOR:"Editor", VIEWER:"Leitor" };
+function normalizeRole(role){
+  const value=String(role??"").trim().toUpperCase();
+  if(["OWNER","DONO","PROPRIETARIO","PROPRIETÁRIO"].includes(value))return "OWNER";
+  if(["EDITOR","EDITAR"].includes(value))return "EDITOR";
+  if(["VIEWER","LEITOR","VISUALIZADOR"].includes(value))return "VIEWER";
+  return "VIEWER";
+}
 let user=null, boards=[], currentBoard=null, members=[], tasks=[], invites=[];
 let boardUnsub=null, taskUnsub=null, memberUnsub=null, inviteUnsub=null, boardPendingUnsub=null;
 let mode="login", selectedTask=null, detailUnsub=null, commentUnsub=null;
@@ -102,7 +109,12 @@ async function loadWorkspace(){
     if(!currentBoard||!boards.some(b=>b.id===currentBoard.id)){
       const first=boards[0]; if(first) await selectBoard(first.id); else {currentBoard=null;renderBoard();}
     } else {
-      const fresh=boards.find(b=>b.id===currentBoard.id); currentBoard={...currentBoard,...fresh}; renderBoardHeader();
+      const fresh=boards.find(b=>b.id===currentBoard.id);
+      currentBoard={...currentBoard,...fresh,ownerId:currentBoard.ownerId||fresh.ownerId};
+      isOwner=currentBoard.ownerId===user.uid;
+      currentBoard.role=isOwner?"OWNER":normalizeRole(fresh.role);
+      canEdit=isOwner||["OWNER","EDITOR"].includes(currentBoard.role);
+      renderBoardHeader();
     }
   },e=>{console.error(e);toast("Erro ao carregar seus quadros.");});
   const qInv=query(collection(db,"invites"),where("email","==",user.email.toLowerCase()),where("status","==","pending"));
@@ -132,13 +144,23 @@ async function acceptInvite(inviteId){
   }catch(e){console.error(e);toast(e.message||"Não foi possível aceitar o convite.");}
 }
 async function selectBoard(boardId){
-  const b=boards.find(x=>x.id===boardId);if(!b)return;
+  const membership=boards.find(x=>x.id===boardId);if(!membership)return;
   cleanupBoard();
   const boardSnap=await getDoc(boardRef(boardId));if(!boardSnap.exists())return;
   const boardData=boardSnap.data();
   isOwner=boardData.ownerId===user.uid;
-  currentBoard={id:boardId,...b,...boardData,role:isOwner?"OWNER":b.role};
-  canEdit=isOwner||b.role==="OWNER"||b.role==="EDITOR";
+  const role=isOwner?"OWNER":normalizeRole(membership.role);
+  currentBoard={id:boardId,...membership,...boardData,ownerId:boardData.ownerId||membership.ownerId,role};
+  canEdit=isOwner||["OWNER","EDITOR"].includes(role);
+
+  // Corrige dados de participação somente quando ownerId confirma a propriedade.
+  if(isOwner){
+    await Promise.all([
+      setDoc(userMembershipRef(boardId),{boardId,name:currentBoard.name||"Meu quadro",ownerId:user.uid,role:"OWNER"},{merge:true}),
+      setDoc(doc(db,"boards",boardId,"members",user.uid),{userId:user.uid,email:user.email,role:"OWNER"},{merge:true})
+    ]);
+  }
+
   renderBoardList();renderBoardHeader();
   memberUnsub=onSnapshot(collection(db,"boards",boardId,"members"),s=>{members=s.docs.map(d=>({id:d.id,...d.data()}));renderMembers();renderBoard();},e=>console.warn(e));
   taskUnsub=onSnapshot(query(collection(db,"tasks"),where("boardId","==",boardId)),s=>{
@@ -153,7 +175,7 @@ function renderBoardHeader(){
   if(!currentBoard)return;
   $("#boardName").textContent=currentBoard.name||"Quadro";
   $("#boardTitle").textContent=currentBoard.name||"Quadro";
-  $("#boardRole").textContent=roleNames[currentBoard.role]||"Dono";
+  $("#boardRole").textContent=roleNames[normalizeRole(currentBoard.role)]||"Leitor";
   $("#boardOwner").textContent=isOwner?"Você é o dono": "Quadro compartilhado";
   $("#inviteBtn").hidden=!isOwner;$("#manageMembersBtn").hidden=!isOwner;
   $("#addTaskBtn").hidden=!canEdit;
@@ -241,23 +263,38 @@ function createTaskCard(t){
   return el;
 }
 async function createTask(){
-  const diagnostic = {
-    email: user?.email || "(sem email)",
-    uid: user?.uid || "(sem uid)",
-    boardId: currentBoard?.id || "(sem quadro)",
-    boardOwnerId: currentBoard?.ownerId || "(vazio)",
-    role: currentBoard?.role || "(vazio)",
-    isOwner,
-    canEdit
-  };
-  console.log("NexTask diagnóstico de permissão:", diagnostic);
-  toast("Diagnóstico: " + JSON.stringify(diagnostic));
-  if(!canEdit)return;
-  const title=$("#taskTitle").value.trim();if(!title)return;
+  const submitButton=$("#taskForm button[type='submit']");
+  if(!currentBoard?.id){toast("Abra um quadro antes de criar uma tarefa.");return;}
+  if(!canEdit){toast("Sua conta está com acesso de leitura neste quadro.");return;}
+  const title=$("#taskTitle").value.trim();
+  if(!title){$("#taskTitle").focus();toast("Digite um título para a tarefa.");return;}
+  if(submitButton.disabled)return;
+  submitButton.disabled=true;
+  const originalLabel=submitButton.textContent;
+  submitButton.textContent="Salvando...";
   try{
-    await addDoc(collection(db,"tasks"),{boardId:currentBoard.id,title,description:$("#taskDescription").value.trim(),status:$("#taskStatus").value,createdBy:user.uid,createdByEmail:user.email,assigneeId:"",assigneeEmail:"",dueDate:"",priority:"medium",labels:[],checklist:[],backlog:false,sprint:"",storyPoints:0,acceptanceCriteria:"",definitionOfDone:"",createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
-    $("#taskModal").classList.remove("open");$("#taskForm").reset();toast("Tarefa criada.");
-  }catch(e){console.error(e);toast("Não foi possível criar a tarefa.");}
+    await addDoc(collection(db,"tasks"),{
+      boardId:currentBoard.id,title,
+      description:$("#taskDescription").value.trim(),
+      status:$("#taskStatus").value,
+      createdBy:user.uid,createdByEmail:user.email,
+      assigneeId:"",assigneeEmail:"",dueDate:"",
+      priority:"medium",labels:[],checklist:[],backlog:false,
+      sprint:"",storyPoints:0,acceptanceCriteria:"",
+      definitionOfDone:"",createdAt:serverTimestamp(),updatedAt:serverTimestamp()
+    });
+    $("#taskModal").classList.remove("open");
+    $("#taskForm").reset();
+    toast("Tarefa criada.");
+  }catch(e){
+    console.error("Erro ao criar tarefa:",e);
+    toast(e?.code==="permission-denied"
+      ?"O Firestore recusou a gravação. As regras publicadas precisam ser conferidas."
+      :"Não foi possível criar a tarefa. Tente novamente.");
+  }finally{
+    submitButton.disabled=false;
+    submitButton.textContent=originalLabel;
+  }
 }
 async function updateTask(taskId,patch){
   if(!canEdit)return;
@@ -351,9 +388,13 @@ async function openRouteTask(){
     const task={id:snap.id,...snap.data()};
     const mem=await getDoc(userMembershipRef(task.boardId));
     if(!mem.exists()){toast("Você não tem acesso a esta tarefa.");return;}
-    currentBoard={id:task.boardId,...(await (async()=>{const b=await getDoc(boardRef(task.boardId));return b.exists()?b.data():{};})()),...mem.data()};
+    const boardSnap=await getDoc(boardRef(task.boardId));
+    const boardData=boardSnap.exists()?boardSnap.data():{};
+    isOwner=boardData.ownerId===user.uid;
+    const role=isOwner?"OWNER":normalizeRole(mem.data().role);
+    currentBoard={id:task.boardId,...boardData,...mem.data(),ownerId:boardData.ownerId||mem.data().ownerId,role};
     members=(await getDocs(collection(db,"boards",task.boardId,"members"))).docs.map(d=>({id:d.id,...d.data()}));
-    canEdit=mem.data().role!=="VIEWER";isOwner=mem.data().role==="OWNER";
+    canEdit=isOwner||["OWNER","EDITOR"].includes(role);
     renderTaskDetail(task);
   },e=>{console.error(e);toast("Sem permissão para abrir esta tarefa.");});
 }
