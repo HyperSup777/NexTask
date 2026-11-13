@@ -28,11 +28,11 @@ service cloud.firestore {
 
     match /boards/{boardId} {
       allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow read: if isMember(boardId);
+      allow read: if isOwner(boardId) || isMember(boardId);
       allow update, delete: if isOwner(boardId);
 
       match /members/{memberId} {
-        allow read: if isMember(boardId);
+        allow read: if isOwner(boardId) || isMember(boardId);
         allow create: if isOwner(boardId)
           || (signedIn() && memberId == request.auth.uid
               && request.resource.data.userId == request.auth.uid
