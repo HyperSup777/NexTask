@@ -83,6 +83,16 @@ service cloud.firestore {
         && request.resource.data.boardId == resource.data.boardId;
       allow delete: if canEdit(resource.data.boardId);
 
+      match /activity/{activityId} {
+        function taskBoardId() {
+          return get(/databases/$(database)/documents/tasks/$(taskId)).data.boardId;
+        }
+        allow read: if isMember(taskBoardId());
+        allow create: if canEdit(taskBoardId())
+          && request.resource.data.authorId == request.auth.uid;
+        allow update, delete: if false;
+      }
+
       match /comments/{commentId} {
         function taskBoardId() {
           return get(/databases/$(database)/documents/tasks/$(taskId)).data.boardId;
