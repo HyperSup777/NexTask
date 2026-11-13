@@ -13,8 +13,9 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/boards/$(boardId)).data.ownerId == request.auth.uid;
     }
     function canEdit(boardId) {
-      return isMember(boardId)
-        && myMembership(boardId).data.role in ['OWNER', 'EDITOR'];
+      return isOwner(boardId)
+        || (isMember(boardId)
+            && myMembership(boardId).data.role in ['OWNER', 'EDITOR', 'Dono', 'Editor', 'dono', 'editor']);
     }
     function acceptedInvite(boardId, inviteId) {
       return signedIn()
