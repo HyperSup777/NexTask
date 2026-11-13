@@ -50,6 +50,14 @@ function setAuthMode(next){
   $("#forgotPassword").hidden=!login;
 }
 $("#switchMode").onclick=()=>setAuthMode(mode==="login"?"register":"login");
+$("#passwordToggle").onclick=()=>{
+  const field=$("#password");
+  const visible=field.type==="password";
+  field.type=visible?"text":"password";
+  $("#passwordToggle").textContent=visible?"Ocultar":"Mostrar";
+  $("#passwordToggle").setAttribute("aria-label",visible?"Ocultar senha":"Mostrar senha");
+  $("#passwordToggle").setAttribute("aria-pressed",String(visible));
+};
 $("#authForm").addEventListener("submit",async e=>{
   e.preventDefault(); const email=$("#email").value.trim(), password=$("#password").value;
   $("#authSubmit").disabled=true;
