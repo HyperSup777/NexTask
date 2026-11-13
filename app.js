@@ -131,14 +131,16 @@ async function loadWorkspace(){
     boards=snap.docs.map(d=>({id:d.id,...d.data()}));
     renderBoardList();
     if(!currentBoard||!boards.some(b=>b.id===currentBoard.id)){
-      const first=boards[0]; if(first) await selectBoard(first.id); else {currentBoard=null;renderBoard();}
-    } else {
+      const first=boards[0];
+      if(first)await selectBoard(first.id);
+      else{currentBoard=null;canEdit=false;isOwner=false;tasks=[];members=[];renderBoard();renderBoardList();}
+    }else{
       const fresh=boards.find(b=>b.id===currentBoard.id);
       currentBoard={...currentBoard,...fresh,ownerId:currentBoard.ownerId||fresh.ownerId};
       isOwner=currentBoard.ownerId===user.uid;
       currentBoard.role=isOwner?"OWNER":normalizeRole(fresh.role);
       canEdit=isOwner||["OWNER","EDITOR"].includes(currentBoard.role);
-      renderBoardHeader();
+      renderBoardList();renderBoardHeader();renderBoard();
     }
   },e=>{console.error(e);toast("Erro ao carregar seus quadros.");});
   const qInv=query(collection(db,"invites"),where("email","==",user.email.toLowerCase()),where("status","==","pending"));
@@ -168,33 +170,47 @@ async function acceptInvite(inviteId){
   }catch(e){console.error(e);toast(e.message||"Não foi possível aceitar o convite.");}
 }
 async function selectBoard(boardId){
-  const membership=boards.find(x=>x.id===boardId);if(!membership)return;
+  const membership=boards.find(x=>x.id===boardId);
+  if(!membership)return;
   cleanupBoard();
-  const boardSnap=await getDoc(boardRef(boardId));if(!boardSnap.exists())return;
-  const boardData=boardSnap.data();
-  const permission=await refreshBoardPermissions(boardId,membership);
-  isOwner=permission.isOwner;
-  const role=permission.role;
-  currentBoard={id:boardId,...membership,...boardData,ownerId:boardData.ownerId||membership.ownerId,role};
-  canEdit=permission.canEdit;
-
-  // Corrige os registros do proprietário quando o documento do quadro confirma a propriedade.
-  if(boardData.ownerId===user.uid){
-    await Promise.all([
-      setDoc(userMembershipRef(boardId),{boardId,name:currentBoard.name||"Meu quadro",ownerId:user.uid,role:"OWNER"},{merge:true}),
-      setDoc(doc(db,"boards",boardId,"members",user.uid),{userId:user.uid,email:user.email,role:"OWNER"},{merge:true})
-    ]);
+  currentBoard=null;tasks=[];members=[];
+  renderBoard();
+  try{
+    const boardSnap=await getDoc(boardRef(boardId));
+    if(!boardSnap.exists())throw new Error("O quadro não foi encontrado ou sua conta não tem acesso.");
+    const boardData=boardSnap.data();
+    const permission=await refreshBoardPermissions(boardId,membership);
+    isOwner=permission.isOwner;
+    const role=permission.role;
+    currentBoard={id:boardId,...membership,...boardData,ownerId:boardData.ownerId||membership.ownerId,role};
+    canEdit=permission.canEdit;
+    if(boardData.ownerId===user.uid){
+      await Promise.all([
+        setDoc(userMembershipRef(boardId),{boardId,name:currentBoard.name||"Meu quadro",ownerId:user.uid,role:"OWNER"},{merge:true}),
+        setDoc(doc(db,"boards",boardId,"members",user.uid),{userId:user.uid,email:user.email,role:"OWNER"},{merge:true})
+      ]);
+    }
+    renderBoardList();renderBoardHeader();renderBoard();
+    memberUnsub=onSnapshot(collection(db,"boards",boardId,"members"),s=>{
+      members=s.docs.map(d=>({id:d.id,...d.data()}));renderMembers();renderBoard();
+    },e=>{console.error("Membros:",e);toast("Não foi possível carregar os participantes.");});
+    taskUnsub=onSnapshot(query(collection(db,"tasks"),where("boardId","==",boardId)),s=>{
+      tasks=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+      renderBoard();
+    },e=>{console.error("Tarefas:",e);toast("Não foi possível carregar as tarefas deste quadro.");});
+    if(isOwner){
+      boardPendingUnsub=onSnapshot(query(collection(db,"invites"),where("boardId","==",boardId),where("status","==","pending")),s=>{
+        renderPendingInvites(s.docs.map(d=>({id:d.id,...d.data()})));
+      },e=>console.warn("Convites:",e));
+    }else{$("#pendingInvites").innerHTML="";}
+  }catch(e){
+    console.error("Falha ao abrir quadro:",e);
+    currentBoard=null;canEdit=false;isOwner=false;tasks=[];members=[];
+    renderBoardList();renderBoard();
+    toast(e?.code==="permission-denied"
+      ?"O Firebase bloqueou o acesso a este quadro. Publique as regras atualizadas."
+      :(e.message||"Não foi possível abrir este quadro."));
   }
-
-  renderBoardList();renderBoardHeader();
-  memberUnsub=onSnapshot(collection(db,"boards",boardId,"members"),s=>{members=s.docs.map(d=>({id:d.id,...d.data()}));renderMembers();renderBoard();},e=>console.warn(e));
-  taskUnsub=onSnapshot(query(collection(db,"tasks"),where("boardId","==",boardId)),s=>{
-    tasks=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
-    renderBoard();
-  },e=>{console.error(e);toast("Não foi possível carregar as tarefas.");});
-  if(isOwner){
-    boardPendingUnsub=onSnapshot(query(collection(db,"invites"),where("boardId","==",boardId),where("status","==","pending")),s=>{renderPendingInvites(s.docs.map(d=>({id:d.id,...d.data()})));},e=>console.warn(e));
-  }else{$("#pendingInvites").innerHTML="";}
 }
 function renderBoardHeader(){
   if(!currentBoard)return;
